@@ -1,0 +1,5 @@
+indexPath=/Users/hxtmac/Documents/cmu/11642/homework1/index
+retrievalAlgorithm=UnrankedBoolean
+queryFilePath=/Users/hxtmac/Documents/workspace/se_hw1/src/or.txt
+trecEvalOutputPath=HW1-queries-UB-OR.teIn
+trecEvalOutputLength=100
