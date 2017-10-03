@@ -36,4 +36,7 @@ public abstract class QrySop extends Qry {
       q_i.initialize (r);
     }
   }
+  // this method is for Indri Retirval Model
+  public abstract double getDefaultScore (RetrievalModel r, int docid) throws IOException;
+
 }

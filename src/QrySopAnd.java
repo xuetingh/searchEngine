@@ -9,8 +9,10 @@ public class QrySopAnd extends QrySop {
      */
     @Override
     public boolean docIteratorHasMatch(RetrievalModel r) {
-        // TODO Auto-generated method stub
-        return this.docIteratorHasMatchAll (r);
+        if(r instanceof RetrievalModelIndri) {
+            return this.docIteratorHasMatchMin(r);
+        }
+        else return this.docIteratorHasMatchAll(r);
     }
  
     /**
@@ -21,17 +23,19 @@ public class QrySopAnd extends QrySop {
      */
     @Override
     public double getScore (RetrievalModel r) throws IOException {
-
-      if (r instanceof RetrievalModelUnrankedBoolean) {
-        return this.getScoreUnrankedBoolean (r);
-      } else if (r instanceof RetrievalModelRankedBoolean) {
-          return this.getScoreRankedBoolean (r);
-    } else {
-        throw new IllegalArgumentException
-          (r.getClass().getName() + " doesn't support the OR operator.");
-      }
+        if (r instanceof RetrievalModelUnrankedBoolean) {
+            return this.getScoreUnrankedBoolean (r);
+        } else if (r instanceof RetrievalModelRankedBoolean) {
+            return this.getScoreRankedBoolean (r);
+        } else if (r instanceof RetrievalModelIndri) {
+            return this.getScoreIndri(r);
+        } else {
+            throw new IllegalArgumentException
+            (r.getClass().getName() + " doesn't support the AND operator.");
+        }
     }
-    
+
+
     /**
      *  getScore for the UnrankedBoolean retrieval model.
      *  @param r The retrieval model that determines how scores are calculated.
@@ -69,5 +73,41 @@ public class QrySopAnd extends QrySop {
           return min_score;
         }
       }
+    /**
+     *  getScore for the Indri retrieval model.
+     *  @param r The retrieval model that determines how scores are calculated.
+     *  @return The document score.
+     *  @throws IOException Error accessing the Lucene index
+     */
+    private double getScoreIndri (RetrievalModel r) throws IOException {
+        double score = 1.0;
+        int docid = this.docIteratorGetMatch();
+        for (int i =0; i<this.args.size(); i++) {
+            Qry q = this.args.get(i);
+            if (q.docIteratorHasMatch(r) && q.docIteratorGetMatch() == docid) {
+                score *= Math.pow(((QrySop) q).getScore(r), 1.0/this.args.size());
+            } else {
+                score *= Math.pow(((QrySop) q).getDefaultScore(r, docid), 1.0/this.args.size());
+            }
+        }
+        return score;
+    }
+
+    /**
+     *  get default score only for the Indri retrieval model.
+     * @param r
+     * @param docid
+     * @return
+     * @throws IOException
+     */
+    public double getDefaultScore (RetrievalModel r, int docid) throws IOException {
+        double score = 1.0;
+        for (int i = 0; i < this.args.size(); i++) {
+            Qry q = this.args.get(i);
+            score *= ((QrySopScore) q).getDefaultScore(r, docid);
+        }
+
+        return score;
+    }
 
 }

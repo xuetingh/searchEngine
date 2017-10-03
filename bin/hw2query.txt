@@ -1,0 +1,3 @@
+702:#WINDOW/10(Pearl Farming)
+704:#WINDOW/50(#NEAR/3(Green party) political views) #WINDOW/50(political views)
+708:#WINDOW/30(Decorative slate sources)

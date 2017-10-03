@@ -30,6 +30,8 @@ public class QrySopOr extends QrySop {
       return this.getScoreUnrankedBoolean (r);
     } else if (r instanceof RetrievalModelRankedBoolean) {
         return this.getScoreRankedBoolean(r);
+    } else if (r instanceof RetrievalModelIndri) {
+      return this.getScoreIndri (r);
     } else {
       throw new IllegalArgumentException
         (r.getClass().getName() + " doesn't support the OR operator.");
@@ -73,5 +75,33 @@ public class QrySopOr extends QrySop {
         return max_score;
       }
     }
- 
+
+  /**
+   * getScore for the Indri retrieval model.
+   * @param r
+   * @return
+   * @throws IOException
+   */
+  private double getScoreIndri (RetrievalModel r) throws IOException {
+    int docid = docIteratorGetMatch ();
+    double score = 1;
+    for (Qry q : this.args) {
+      if(q.docIteratorHasMatchCache() && q.docIteratorGetMatch() == docid) {
+        score *= 1 - ((QrySop) q).getScore(r);
+      }
+      else {
+        score *= 1 - ((QrySop) q).getDefaultScore(r,docid);
+      }
+    }
+    score = 1 - score;
+    return score;
+  }
+
+  public double getDefaultScore(RetrievalModel r, int docid) throws IOException{
+      double defaultScore = 1;
+      for (Qry q: this.args) {
+        defaultScore *= 1 - ((QrySop) q).getDefaultScore (r, docid);
+      }
+      return 1 - defaultScore;
+    }
 }

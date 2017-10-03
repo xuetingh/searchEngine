@@ -2,13 +2,14 @@
  *  Copyright (c) 2017, Carnegie Mellon University.  All Rights Reserved.
  */
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -85,10 +86,9 @@ public class QryParser {
     //  Handle the distance argument to proximity operators such as
     //  #near/n and #window/n.
 
-    //  STUDENT HW1 AND HW2 CODE HERE
     opAndDist = operatorNameLowerCase.split("/");
     operatorNameLowerCase = opAndDist[0];
-    if (operatorNameLowerCase.equals("#near")) {
+    if (operatorNameLowerCase.equals("#near") || operatorNameLowerCase.equals("#window")) {
         operatorDistance = Integer.parseInt(opAndDist[1]);
     }
     //  Create the query operator.
@@ -105,6 +105,18 @@ public class QryParser {
           break;
       case "#syn":
           operator = new QryIopSyn ();
+          break;
+      case "#sum":
+          operator = new QrySopSum ();
+          break;
+      case "#window":
+          operator = new QryIopWindow (operatorDistance);
+          break;
+      case "#wsum":
+          operator = new QrySopWSum ();
+          break;
+      case "#wand":
+          operator = new QrySopWAnd ();
           break;
       default:
 	syntaxError ("Unknown query operator " + operatorName);
@@ -307,12 +319,19 @@ public class QryParser {
       //  If the operator uses weighted query arguments, each pass of
       //  this loop must handle "weight arg".  Handle the weight first.
 
-      //  STUDENT HW2 CODE GOES HERE
-
       //  Now handle the argument (which could be a subquery).
 
       Qry[] qargs = null;
       PopData<String,String> p;
+      double weight = 0;
+
+      //  handles #WSUM and #WAND
+      if (queryTree instanceof QrySopW) {
+        p = popTerm (queryString);
+        weight = Double.parseDouble(p.getPopped());
+        //weights.add(Double.parseDouble(p.getPopped()));
+        queryString = p.getRemaining().trim();
+      }
 
       if (queryString.charAt(0) == '#') {	// Subquery
 	  p = popSubquery (queryString);
@@ -327,7 +346,10 @@ public class QryParser {
       
       //  Add the argument(s) to the query tree.
           for (int i=0; i<qargs.length; i++) {
-        //  STUDENTS WILL NEED TO ADJUST THIS BLOCK TO HANDLE WEIGHTS IN HW2
+            //for operators #WAND and #WSUM, weight should also be added to the query tree
+            if (queryTree instanceof QrySopW) {
+              ((QrySopW) queryTree).appendWeight(weight);
+            }
               queryTree.appendArg (qargs[i]);
           }
           
@@ -340,7 +362,7 @@ public class QryParser {
   /**
    *  Remove a subQuery from an argument string.  Return the subquery
    *  and the modified argument string.
-   *  @param String A partial query argument string, e.g., "#and(a b)
+   *  @param argString A partial query argument string, e.g., "#and(a b)
    *  c d".
    *  @return PopData<String,String> The subquery string and the
    *  modified argString (e.g., "#and(a b)" and "c d".
@@ -363,7 +385,7 @@ public class QryParser {
   /**
    *  Remove a term from an argument string.  Return the term and
    *  the modified argument string.
-   *  @param String A partial query argument string, e.g., "a b c d".
+   *  @param argString A partial query argument string, e.g., "a b c d".
    *  @return PopData<String,String>
    *  The term string and the modified argString (e.g., "a" and
    *  "b c d".
