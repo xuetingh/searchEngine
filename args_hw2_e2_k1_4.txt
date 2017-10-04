@@ -1,0 +1,8 @@
+indexPath=/Users/hxtmac/Documents/cmu/11642/homework1/index
+queryFilePath=query_hw2_e2.txt
+trecEvalOutputPath=HW2-e2-k1-4.teIn
+trecEvalOutputLength=100
+retrievalAlgorithm=BM25
+BM25:k_1=4
+BM25:b=0.75
+BM25:k_3=0

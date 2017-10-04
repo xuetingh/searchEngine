@@ -12,9 +12,11 @@ public class RetrievalModelIndri extends RetrievalModel {
         this.mu = mu;
         this.lambda = lambda;
     }
+
     public void setMu(double mu) {
         this.mu = mu;
     }
+
     public void setLambda(double lambda) {
         this.lambda = lambda;
     }
@@ -22,6 +24,7 @@ public class RetrievalModelIndri extends RetrievalModel {
     public double getMu() {
         return this.mu;
     }
+
     public double getLambda() {
         return this.lambda;
     }

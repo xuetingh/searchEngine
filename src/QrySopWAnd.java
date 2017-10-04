@@ -1,28 +1,30 @@
 import java.io.*;
 
 /**
- *  The AND operator for all retrieval models.
+ * The AND operator for all retrieval models.
  */
 public class QrySopWAnd extends QrySopW {
 
 
     /**
-     *  Indicates whether the query has a match.
-     *  @param r The retrieval model that determines what is a match
-     *  @return True if the query matches, otherwise false.
+     * Indicates whether the query has a match.
+     *
+     * @param r The retrieval model that determines what is a match
+     * @return True if the query matches, otherwise false.
      */
-    public boolean docIteratorHasMatch (RetrievalModel r) {
+    public boolean docIteratorHasMatch(RetrievalModel r) {
         return this.docIteratorHasMatchMin(r);
     }
 
     /**
-     *  Get a score for the document that docIteratorHasMatch matched.
-     *  @param r The retrieval model that determines how scores are calculated.
-     *  @return The document score.
-     *  @throws IOException Error accessing the Lucene index
+     * Get a score for the document that docIteratorHasMatch matched.
+     *
+     * @param r The retrieval model that determines how scores are calculated.
+     * @return The document score.
+     * @throws IOException Error accessing the Lucene index
      */
 
-    public double getScore (RetrievalModel r) throws IOException {
+    public double getScore(RetrievalModel r) throws IOException {
         if (r instanceof RetrievalModelIndri) {
             return this.getScoreIndri(r);
         } else {
@@ -32,12 +34,13 @@ public class QrySopWAnd extends QrySopW {
     }
 
     /**
-     *  getScore for the Indri retrieval model.
-     *  @param r The retrieval model that determines how scores are calculated.
-     *  @return The document score.
-     *  @throws IOException Error accessing the Lucene index
+     * getScore for the Indri retrieval model.
+     *
+     * @param r The retrieval model that determines how scores are calculated.
+     * @return The document score.
+     * @throws IOException Error accessing the Lucene index
      */
-    private double getScoreIndri (RetrievalModel r) throws IOException {
+    private double getScoreIndri(RetrievalModel r) throws IOException {
         double score = 1;
         int docid = this.docIteratorGetMatch();
         for (int i = 0; i < this.args.size(); i++) {
@@ -53,12 +56,13 @@ public class QrySopWAnd extends QrySopW {
     }
 
     /**
-     *  get default score for Indri model when a document doesn't contain a term in query.
+     * get default score for Indri model when a document doesn't contain a term in query.
+     *
      * @param r
      * @param docid
      * @return
      */
-    public double getDefaultScore (RetrievalModel r, int docid) throws IOException{
+    public double getDefaultScore(RetrievalModel r, int docid) throws IOException {
         double score = 1;
         for (int i = 0; i < this.args.size(); i++) {
             Qry q = this.args.get(i);

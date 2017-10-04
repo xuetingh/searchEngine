@@ -1,8 +1,7 @@
 indexPath=/Users/hxtmac/Documents/cmu/11642/homework1/index
 queryFilePath=src/hw2query.txt
-trecEvalOutputPath=HW2-Train-54.teIn
+trecEvalOutputPath=HW2-Train-49.teIn
 trecEvalOutputLength=100
-retrievalAlgorithm=BM25
-BM25:k_1=2.0
-BM25:b=0.4
-BM25:k_3=0
+retrievalAlgorithm=Indri
+Indri:mu=3500
+Indri:lambda=0.9

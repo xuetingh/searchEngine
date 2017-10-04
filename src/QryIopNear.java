@@ -4,16 +4,17 @@ import java.util.ArrayList;
 
 
 public class QryIopNear extends QryIop {
-    
+
     private int distance;
-    
+
     public QryIopNear(int dist) {
         this.distance = dist;
     }
-   
+
     /**
-     *  Evaluate the query operator.
-     *  @throws IOException Error accessing the Lucene index.
+     * Evaluate the query operator.
+     *
+     * @throws IOException Error accessing the Lucene index.
      */
     @Override
     protected void evaluate() throws IOException {
@@ -29,7 +30,7 @@ public class QryIopNear extends QryIop {
             return;
         }
         //  Use docIteratorHasMatchAll method in Qry to get the doc that has all terms in it
-        while(this.docIteratorHasMatchAll(null)){
+        while (this.docIteratorHasMatchAll(null)) {
             //  location of previous term
             int locRec = -1;
             //  this loop checks if the adjacent two terms meet the distance requirement
@@ -47,7 +48,7 @@ public class QryIopNear extends QryIop {
                 }
                 // for other terms, the loc should past the first term's
                 q.locIteratorAdvancePast(locRec);
-                if(!(q.locIteratorHasMatch())){
+                if (!(q.locIteratorHasMatch())) {
                     break;
                 }
                 int pos1 = q.locIteratorGetMatch();
@@ -67,7 +68,7 @@ public class QryIopNear extends QryIop {
                     // not just the first!!
                     i = -1;
                     int j = 0;
-                    for(j = 0; j< argSize; j++) {
+                    for (j = 0; j < argSize; j++) {
                         Qry qry = this.args.get(j);
                         ((QryIop) qry).locIteratorAdvance();
                         if (!((QryIop) qry).locIteratorHasMatch()) break;

@@ -1,9 +1,10 @@
 import java.io.IOException;
 
 public class QrySopAnd extends QrySop {
-    
+
     /**
-     *  Indicates whether the query has a match.
+     *  Indicates whether the query has a match. BM25 doesn't support; Indri allows document not having all
+     *  terms.
      *  @param r The retrieval model that determines what is a match
      *  @return True if the query matches, otherwise false.
      */
@@ -14,7 +15,7 @@ public class QrySopAnd extends QrySop {
         }
         else return this.docIteratorHasMatchAll(r);
     }
- 
+
     /**
      *  Get a score for the document that docIteratorHasMatch matched.
      *  @param r The retrieval model that determines how scores are calculated.
@@ -63,10 +64,10 @@ public class QrySopAnd extends QrySop {
         } else {
           double min_score = Double.MAX_VALUE;
           for (Qry q : this.args) {
-            if (q.docIteratorHasMatch(r) && 
+            if (q.docIteratorHasMatch(r) &&
                     q.docIteratorGetMatch() == this.docIteratorGetMatch() ) {
                 //  can't call getScore directly, because it may get false score
-                //  when q is sopor or sopand 
+                //  when q is sopor or sopand
               min_score = Math.min(min_score, ((QrySop) q).getScore(r));
             }
           }
@@ -82,15 +83,16 @@ public class QrySopAnd extends QrySop {
     private double getScoreIndri (RetrievalModel r) throws IOException {
         double score = 1.0;
         int docid = this.docIteratorGetMatch();
-        for (int i =0; i<this.args.size(); i++) {
-            Qry q = this.args.get(i);
+        // do power calculation at last to speed up
+        double a = 1.0 / this.args.size();
+        for (Qry q : this.args) {
             if (q.docIteratorHasMatch(r) && q.docIteratorGetMatch() == docid) {
-                score *= Math.pow(((QrySop) q).getScore(r), 1.0/this.args.size());
+                score *= ((QrySop) q).getScore(r);
             } else {
-                score *= Math.pow(((QrySop) q).getDefaultScore(r, docid), 1.0/this.args.size());
+                score *= ((QrySop) q).getDefaultScore(r, docid);
             }
         }
-        return score;
+        return Math.pow(score, a);
     }
 
     /**
@@ -102,12 +104,13 @@ public class QrySopAnd extends QrySop {
      */
     public double getDefaultScore (RetrievalModel r, int docid) throws IOException {
         double score = 1.0;
+        double a = 1.0 / this.args.size();
         for (int i = 0; i < this.args.size(); i++) {
             Qry q = this.args.get(i);
             score *= ((QrySopScore) q).getDefaultScore(r, docid);
         }
 
-        return score;
+        return Math.pow(score, a);
     }
 
 }

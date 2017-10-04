@@ -11,8 +11,9 @@ public class QryIopWindow extends QryIop {
     }
 
     /**
-     *  Evaluate the query operator.
-     *  @throws IOException Error accessing the Lucene index.
+     * Evaluate the query operator.
+     *
+     * @throws IOException Error accessing the Lucene index.
      */
     @Override
     protected void evaluate() throws IOException {

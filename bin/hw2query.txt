@@ -1,3 +1,2 @@
-702:#WINDOW/10(Pearl Farming)
-704:#WINDOW/50(#NEAR/3(Green party) political views) #WINDOW/50(political views)
-708:#WINDOW/30(Decorative slate sources)
+710:#AND(#AND(Prostate #NEAR/7(cancer treatments)) #AND(cancer.title treatments.title))
+711:#AND(#AND(Train station #SYN(security safety) measures) #AND(Train.title station.title))

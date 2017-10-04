@@ -1,0 +1,5 @@
+indexPath=/Users/hxtmac/Documents/cmu/11642/homework1/index
+retrievalAlgorithm=rankedBoolean
+queryFilePath=query_hw2_e1.txt
+trecEvalOutputPath=HW2-e1-r.teIn
+trecEvalOutputLength=100
