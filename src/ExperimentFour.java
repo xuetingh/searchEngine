@@ -25,7 +25,7 @@ public class ExperimentFour {
                             w3 + " " + terms[i] + ".title  " + w4 + " " + terms[i] + ".body)");
                 }
                 output.write(")\n");
-                output.flush();
+                output.flush();9
             }
         } catch (IOException ex) {
             ex.printStackTrace();
