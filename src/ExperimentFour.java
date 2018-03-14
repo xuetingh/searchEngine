@@ -6,7 +6,7 @@ public class ExperimentFour {
         try
         {
             String qLine = null;
-            input = new BufferedReader(new FileReader("query_hw2_e1.txt"));
+            input = new BufferedReader(new FileReader("query.txt"));
             File f = new File("query_hw2_e4_"+ w +".txt");
             FileOutputStream fStream = new FileOutputStream(f);
             OutputStreamWriter output = new OutputStreamWriter(fStream);
@@ -25,7 +25,7 @@ public class ExperimentFour {
                             w3 + " " + terms[i] + ".title  " + w4 + " " + terms[i] + ".body)");
                 }
                 output.write(")\n");
-                output.flush();9
+                output.flush();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -34,7 +34,12 @@ public class ExperimentFour {
 
     public static void main(String[] args){
         ExperimentFour ef = new ExperimentFour();
+        ef.makeQry(0.1, 0.1, 0.7,0.1, "1171");
+        ef.makeQry(0.1, 0.7, 0.1,0.1, "1711");
+        ef.makeQry(0.7, 0.1, 0.1,0.1, "7111");
+        ef.makeQry(0.3, 0.2, 0.1,0.4, "3214");
         ef.makeQry(0.2, 0.1, 0.1,0.6, "2116");
+
     }
 
 }

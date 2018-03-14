@@ -1,7 +1,0 @@
-indexPath=/Users/hxtmac/Documents/cmu/11642/homework1/index
-queryFilePath=query_hw2_e4_3214.txt
-trecEvalOutputPath=HW2-e4-3214.teIn
-trecEvalOutputLength=100
-retrievalAlgorithm=Indri
-Indri:mu=2500
-Indri:lambda=0.4

@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2017, Carnegie Mellon University.  All Rights Reserved.
- *  Version 3.3.1.
+ *  Copyright (c) 2018, Carnegie Mellon University.  All Rights Reserved.
+ *  Version 3.3.2.
  */
 
 import java.io.*;
@@ -25,6 +25,7 @@ public class QryEval {
 
     private static final String[] TEXT_FIELDS =
             {"body", "title", "url", "inlink"};
+
 
     //  --------------- Methods ---------------------------------------
 
@@ -52,15 +53,16 @@ public class QryEval {
 
         Map<String, String> parameters = readParameterFile(args[0]);
 
-        int outputLength = Integer.parseInt(parameters.get("trecEvalOutputLength"));
         //  Open the index and initialize the retrieval model.
 
         Idx.open(parameters.get("indexPath"));
         RetrievalModel model = initializeRetrievalModel(parameters);
 
         //  Perform experiments.
-
-        processQueryFile(parameters.get("queryFilePath"), parameters.get("trecEvalOutputPath"), model, outputLength);
+        int outputLength = Integer.parseInt(parameters.get("trecEvalOutputLength"));
+        String queryFilePath = parameters.get("queryFilePath");
+        String trecEvalOutputPath = parameters.get("trecEvalOutputPath");
+        processQueryFile(queryFilePath, model, trecEvalOutputPath, outputLength);
 
         //  Clean up.
 
@@ -91,14 +93,13 @@ public class QryEval {
             double k3 = Double.parseDouble(parameters.get("BM25:k_3"));
             model = new RetrievalModelBM25(b, k1, k3);
         } else if (modelString.equals("indri")) {
-            double mu = Double.parseDouble(parameters.get("Indri:mu"));
+            int mu = Integer.parseInt(parameters.get("Indri:mu"));
             double lambda = Double.parseDouble(parameters.get("Indri:lambda"));
             model = new RetrievalModelIndri(mu, lambda);
         } else {
             throw new IllegalArgumentException
                     ("Unknown retrieval model " + parameters.get("retrievalAlgorithm"));
         }
-
         return model;
     }
 
@@ -167,8 +168,7 @@ public class QryEval {
      * @param model
      * @throws IOException Error accessing the Lucene index.
      */
-    static void processQueryFile(String queryFilePath, String trecEvalOutputPath,
-                                 RetrievalModel model, int outputLength)
+    static void processQueryFile(String queryFilePath, RetrievalModel model, String trecEvalOutputPath, int outputLength)
             throws IOException {
 
         BufferedReader input = null;
@@ -177,71 +177,46 @@ public class QryEval {
             String qLine = null;
 
             input = new BufferedReader(new FileReader(queryFilePath));
-            File f = new File(trecEvalOutputPath);
-            FileOutputStream fStream = new FileOutputStream(f);
-            OutputStreamWriter output = new OutputStreamWriter(fStream);
-            //  Each pass of the loop processes one query.
+            PrintWriter output = null;
+            try {
+                output = new PrintWriter(new FileWriter(trecEvalOutputPath));
 
-            while ((qLine = input.readLine()) != null) {
-                int d = qLine.indexOf(':');
+                //  Each pass of the loop processes one query.
 
-                if (d < 0) {
-                    throw new IllegalArgumentException
-                            ("Syntax error:  Missing ':' in query line.");
+                while ((qLine = input.readLine()) != null) {
+                    int d = qLine.indexOf(':');
+
+                    if (d < 0) {
+                        throw new IllegalArgumentException
+                                ("Syntax error:  Missing ':' in query line.");
+                    }
+
+                    printMemoryUsage(false);
+
+                    String qid = qLine.substring(0, d);
+                    String query = qLine.substring(d + 1);
+
+                    System.out.println("Query " + qLine);
+
+                    ScoreList r = null;
+
+                    r = processQuery(query, model);
+
+                    if (r != null) {
+                        printResults(qid, r, output, outputLength);
+                        System.out.println();
+                    }
                 }
-
-                printMemoryUsage(false);
-
-                String qid = qLine.substring(0, d);
-                String query = qLine.substring(d + 1);
-
-                System.out.println("Query " + qLine);
-
-                ScoreList r = null;
-
-                r = processQuery(query, model);
-
-                if (r != null) {
-                    saveResults(qid, r, output, outputLength);
-                    //printResults(qid, r, outputLength);
-                    System.out.println();
-                }
+            } catch (IOException ex) {
+                System.err.println("Caught IOException: " +  ex.getMessage());
+            } finally {
+                output.close();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
             input.close();
         }
-    }
-    /**
-     * Save the query results.
-     *
-     *
-     * QueryID Q0 DocID Rank Score RunID
-     *
-     * @param queryName
-     *          Original query.
-     * @param result
-     *          A list of document ids and scores
-     * @throws IOException Error accessing the Lucene index.
-     */
-
-    /**
-     * Sort the list by score and external document id.
-     */
-
-    static void saveResults(String queryName, ScoreList result, OutputStreamWriter output, int outputLength) throws IOException {
-        result.sort();
-        if (result.size() > 0) {
-            for (int i = 0; i < Math.min(outputLength, result.size()); i++) {
-                output.write(String.format("%s\tQ0\t%s\t%d\t%.18f\tfubar\n", queryName, Idx.getExternalDocid(result.getDocid(i)), i + 1, result.getDocidScore(i)));
-            }
-        } else {
-            output.write(String.format("%s\tQ0\tdummy\t1\t0\tfubar\n", queryName));
-
-        }
-        output.flush();
-
     }
 
     /**
@@ -256,17 +231,18 @@ public class QryEval {
      * @param result    A list of document ids and scores
      * @throws IOException Error accessing the Lucene index.
      */
-    static void printResults(String queryName, ScoreList result, int outputLength) throws IOException {
-
+    static void printResults(String queryName, ScoreList result, PrintWriter output, int outputLength)
+            throws IOException {
         result.sort();
-        if (result.size() > 0) {
-            for (int i = 0; i < Math.min(outputLength, result.size()); i++) {
-                System.out.println(String.format("%s\tQ0\t%s\t%d\t%.18f\tfubar\n", queryName, Idx.getExternalDocid(result.getDocid(i)), i + 1, result.getDocidScore(i)));
-            }
+        if (result.size() < 1) {
+            output.println(String.format("%s\tQ0\tdummy\t1\t0\trun-1\n", queryName));
         } else {
-            System.out.println(String.format("%s\tQ0\tdummy\t1\t0\tfubar\n", queryName));
-
+            for (int i = 0; i < Math.min(outputLength, result.size()); i++) {
+                output.println(String.format("%s\tQ0\t%s\t%d\t%.18f\trun-1\n", queryName,
+                        Idx.getExternalDocid(result.getDocid(i)), i + 1, result.getDocidScore(i)));
+            }
         }
+        output.flush();
     }
 
     /**
@@ -280,7 +256,7 @@ public class QryEval {
     private static Map<String, String> readParameterFile(String parameterFileName)
             throws IOException {
 
-        Map<String, String> parameters = new HashMap<String, String>();
+        Map<String, String> parameters = new HashMap<>();
 
         File parameterFile = new File(parameterFileName);
 
@@ -302,8 +278,8 @@ public class QryEval {
         if (!(parameters.containsKey("indexPath") &&
                 parameters.containsKey("queryFilePath") &&
                 parameters.containsKey("trecEvalOutputPath") &&
-                parameters.containsKey("retrievalAlgorithm") &&
-                parameters.containsKey("trecEvalOutputLength"))) {
+                parameters.containsKey("trecEvalOutputLength") &&
+                parameters.containsKey("retrievalAlgorithm"))) {
             throw new IllegalArgumentException
                     ("Required parameters were missing from the parameter file.");
         }
@@ -312,4 +288,3 @@ public class QryEval {
     }
 
 }
-

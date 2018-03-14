@@ -39,62 +39,18 @@
 
 print formulate_query( "indiana child support", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
 # example usage
-print 702 . formulate_query( "Pearl farming", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 704 . formulate_query( "Green party political views", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 705 . formulate_query( "Iraq foreign debt reduction", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 706 . formulate_query( "Controlling type II diabetes", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 707 . formulate_query( "Aspirin cancer prevention", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 708 . formulate_query( "Decorative slate sources", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 709 . formulate_query( "Horse racing jockey weight", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 710 . formulate_query( "Prostate cancer treatments", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 711 . formulate_query( "Train station security measures", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
-print 712 . formulate_query( "Pyramid scheme", "sd", 0.4, 0.2, 0.4 ) . "\n\n";
 
-print 702 . formulate_query( "Pearl farming", "sd", 0.8, 0.1, 0.1 ) . "\n\n";
-print 704 . formulate_query( "Green party political views", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 705 . formulate_query( "Iraq foreign debt reduction", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 706 . formulate_query( "Controlling type II diabetes", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 707 . formulate_query( "Aspirin cancer prevention", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 708 . formulate_query( "Decorative slate sources", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 709 . formulate_query( "Horse racing jockey weight", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 710 . formulate_query( "Prostate cancer treatments", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 711 . formulate_query( "Train station security measures", "sd", 0.8, 0.1, 0.1) . "\n\n";
-print 712 . formulate_query( "Pyramid scheme", "sd", 0.8, 0.1, 0.1) . "\n\n";
 
-print 702 . formulate_query( "Pearl farming", "sd", 0.4, 0.4, 0.2 ) . "\n\n";
-print 704 . formulate_query( "Green party political views", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 705 . formulate_query( "Iraq foreign debt reduction", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 706 . formulate_query( "Controlling type II diabetes", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 707 . formulate_query( "Aspirin cancer prevention", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 708 . formulate_query( "Decorative slate sources", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 709 . formulate_query( "Horse racing jockey weight", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 710 . formulate_query( "Prostate cancer treatments", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 711 . formulate_query( "Train station security measures", "sd", 0.4, 0.4, 0.2) . "\n\n";
-print 712 . formulate_query( "Pyramid scheme", "sd", 0.4, 0.4, 0.2) . "\n\n";
-
-print 702 . formulate_query( "Pearl farming", "sd", 0.2, 0.4, 0.4 ) . "\n\n";
-print 704 . formulate_query( "Green party political views", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 705 . formulate_query( "Iraq foreign debt reduction", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 706 . formulate_query( "Controlling type II diabetes", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 707 . formulate_query( "Aspirin cancer prevention", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 708 . formulate_query( "Decorative slate sources", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 709 . formulate_query( "Horse racing jockey weight", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 710 . formulate_query( "Prostate cancer treatments", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 711 . formulate_query( "Train station security measures", "sd", 0.2, 0.4, 0.4) . "\n\n";
-print 712 . formulate_query( "Pyramid scheme", "sd", 0.2, 0.4, 0.4) . "\n\n";
-
-print 702 . formulate_query( "Pearl farming", "sd", 0.1, 0.1, 0.8 ) . "\n\n";
-print 704 . formulate_query( "Green party political views", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 705 . formulate_query( "Iraq foreign debt reduction", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 706 . formulate_query( "Controlling type II diabetes", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 707 . formulate_query( "Aspirin cancer prevention", "sd", 0.1, 0.1, 0.8) . "\n\n";
 print 708 . formulate_query( "Decorative slate sources", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 709 . formulate_query( "Horse racing jockey weight", "sd", 0.1, 0.1, 0.8) . "\n\n";
 print 710 . formulate_query( "Prostate cancer treatments", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 711 . formulate_query( "Train station security measures", "sd", 0.1, 0.1, 0.8) . "\n\n";
-print 712 . formulate_query( "Pyramid scheme", "sd", 0.1, 0.1, 0.8) . "\n\n";
-
-
+print 721 . formulate_query( "Census data applications", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 726 . formulate_query( "Hubble telescope repairs", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 728 . formulate_query( "whales save endangered", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 730 . formulate_query( "Gastric bypass complications", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 733 . formulate_query( "Airline overbooking", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 742 . formulate_query( "hedge funds fraud protection", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 749 . formulate_query( "Puerto Rico state", "sd", 0.1, 0.1, 0.8) . "\n\n";
+print 751 . formulate_query( "Scrabble Players", "sd", 0.1, 0.1, 0.8) . "\n\n";
 #
 # formulates a query based on query text and feature weights
 #

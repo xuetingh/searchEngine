@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="EclipseModuleManager">
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/commons-compress-1.11.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-analyzers-common-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-benchmark-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-codecs-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-core-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-demo-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-queryparser-6.6.0.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/nekohtml-1.9.17.jar!/" />
-    <libelement value="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/xercesImpl-2.9.1.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/commons-compress-1.11.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-analyzers-common-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-benchmark-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-codecs-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-core-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-demo-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-queryparser-6.6.0.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/nekohtml-1.9.17.jar!/" />
+    <libelement value="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/xercesImpl-2.9.1.jar!/" />
     <src_description expected_position="0">
       <src_folder value="file://$MODULE_DIR$/src" expected_position="0" />
     </src_description>
@@ -25,7 +25,7 @@
     <orderEntry type="module-library">
       <library name="commons-compress-1.11.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/commons-compress-1.11.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/commons-compress-1.11.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -34,7 +34,7 @@
     <orderEntry type="module-library">
       <library name="lucene-analyzers-common-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-analyzers-common-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-analyzers-common-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -43,7 +43,7 @@
     <orderEntry type="module-library">
       <library name="lucene-benchmark-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-benchmark-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-benchmark-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -52,7 +52,7 @@
     <orderEntry type="module-library">
       <library name="lucene-codecs-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-codecs-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-codecs-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -61,7 +61,7 @@
     <orderEntry type="module-library">
       <library name="lucene-core-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-core-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-core-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -70,7 +70,7 @@
     <orderEntry type="module-library">
       <library name="lucene-demo-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-demo-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-demo-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -79,7 +79,7 @@
     <orderEntry type="module-library">
       <library name="lucene-queryparser-6.6.0.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/lucene-queryparser-6.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/lucene-queryparser-6.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -88,7 +88,7 @@
     <orderEntry type="module-library">
       <library name="nekohtml-1.9.17.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/nekohtml-1.9.17.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/nekohtml-1.9.17.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -97,12 +97,12 @@
     <orderEntry type="module-library">
       <library name="xercesImpl-2.9.1.jar">
         <CLASSES>
-          <root url="jar://$USER_HOME$/Documents/cmu/11642/homework1/QryEval/lucene-6.6.0/xercesImpl-2.9.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../homework1/QryEval/lucene-6.6.0/xercesImpl-2.9.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="lucene-analyzers-common-6.6.0" level="project" />
+    <orderEntry type="library" name="commons-compress-1.11" level="project" />
   </component>
 </module>

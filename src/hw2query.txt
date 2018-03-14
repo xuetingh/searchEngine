@@ -1,2 +1,0 @@
-710:#AND(#AND(Prostate #NEAR/7(cancer treatments)) #AND(cancer.title treatments.title))
-711:#AND(#AND(Train station #SYN(security safety) measures) #AND(Train.title station.title))

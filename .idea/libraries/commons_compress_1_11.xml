@@ -1,0 +1,17 @@
+<component name="libraryTable">
+  <library name="commons-compress-1.11">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/commons-compress-1.11.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-analyzers-common-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-benchmark-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-codecs-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-core-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-demo-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/lucene-queryparser-6.6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/nekohtml-1.9.17.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../lucene-6.6.0/xercesImpl-2.9.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
