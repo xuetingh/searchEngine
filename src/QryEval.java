@@ -4,9 +4,9 @@
  */
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Scanner;
+import java.util.Map.Entry;
 
 /**
  * This software illustrates the architecture for the portion of a
@@ -62,12 +62,209 @@ public class QryEval {
         int outputLength = Integer.parseInt(parameters.get("trecEvalOutputLength"));
         String queryFilePath = parameters.get("queryFilePath");
         String trecEvalOutputPath = parameters.get("trecEvalOutputPath");
-        processQueryFile(queryFilePath, model, trecEvalOutputPath, outputLength);
-
+        if (!parameters.keySet().contains("fb") || !Boolean.parseBoolean(parameters.get("fb"))) {
+            processQueryFile(queryFilePath, model, trecEvalOutputPath, outputLength);
+        } else {
+            int fbDocs = Integer.parseInt(parameters.get("fbDocs"));
+            int fbTerms = Integer.parseInt(parameters.get("fbTerms"));
+            int fbMu = Integer.parseInt(parameters.get("fbMu"));
+            double fbOrigWeight = Double.parseDouble(parameters.get("fbOrigWeight"));
+            String initialRankingFile = parameters.get("fbInitialRankingFile");
+            String fbExpansionQueryFile = parameters.get("fbExpansionQueryFile");
+            Map<String, ScoreList> ranking;
+            if (parameters.keySet().contains("fbInitialRankingFile")) {
+                ranking = getRankingFile(initialRankingFile);
+            } else {
+                //if ranking file is not specified, generate one by the original query
+                processQueryFile(queryFilePath, model, "fbRankingFile", fbDocs);
+                ranking = getRankingFile("fbRankingFile");
+            }
+            //get expanded query string, write it to
+            queryExpansion(ranking, fbDocs, fbTerms, fbExpansionQueryFile, fbMu, fbOrigWeight);
+            processQueryFile("fbFinalQueryFile", model, trecEvalOutputPath, outputLength);
+        }
         //  Clean up.
 
         timer.stop();
         System.out.println("Time:  " + timer);
+    }
+
+    private static void queryExpansion(Map<String, ScoreList> ranking, int fbDocs, int fbTerms, String filename, int fbMu, double fbOrigWeight) {
+        PrintWriter output = null;
+        PrintWriter output2 = null;
+        try {
+            output = new PrintWriter(new FileWriter(filename));
+            output2 = new PrintWriter(new FileWriter("fbFinalQueryFile"));
+            double length = Idx.getSumOfFieldLengths("body");
+            for (String qid : ranking.keySet()) {
+                // for each query(qid), a new map of term and p_mle(t|C) is created, avoid repeated calculation
+                HashMap<String, Double> termMLE = new HashMap<>();
+                // for each term, stores its sum of scores from top fbDocs documents
+                HashMap<String, Double> scoreMap = new HashMap<>();
+                // for each term, keep track of what documents it appeared in, so we can calculate default score later
+                HashMap<String, ArrayList<Integer>> docs = new HashMap<>();
+                ScoreList r = ranking.get(qid);
+                int docSize = Math.min(fbDocs, r.size());
+                // go through the top fbDocs documents
+                for (int i = 0; i < docSize; i++) {
+                    int docid = r.getDocid(i);
+                    double docLen = Idx.getFieldLength("body", docid);
+                    double docScore = r.getDocidScore(i);
+                    TermVector tv = new TermVector(docid, "body");
+                    // go through the forward index
+                    for (int j = 1; j < tv.stemsLength(); j++) {
+                        String term = tv.stemString(j);
+                        // ignore words with "." or ","
+                        if (term.contains(".") || term.contains(",")) {
+                            continue;
+                        }
+                        // save which documents contains a certain term, so we know which documents don't
+                        if (docs.containsKey(term)) {
+                            ArrayList<Integer> docList = docs.get(term);
+                            docList.add(docid);
+                            docs.put(term, docList);
+                        } else {
+                            ArrayList<Integer> docList = new ArrayList<>();
+                            docList.add(docid);
+                            docs.put(term, docList);
+                        }
+                        double mle;
+                        if (!termMLE.containsKey(term)) {
+                            double ctf = tv.totalStemFreq(j);
+                            mle = ctf / length;
+                            termMLE.put(term, mle);
+                        } else {
+                            mle = termMLE.get(term);
+                        }
+                        double tf = tv.stemFreq(j);
+                        double ptd = (tf + fbMu * mle) / (docLen + fbMu);
+                        double score_d = ptd * docScore * (Math.log(1.0 / mle));
+                        if (scoreMap.containsKey(term)) {
+                            double score = scoreMap.get(term);
+                            score = score + score_d;
+                            scoreMap.put(term, score);
+                        } else {
+                            scoreMap.put(term, score_d);
+                        }
+                    }
+                }
+                // now, go through the term in scoreMap, add default scores of those documents where tf=0
+                for (String term : docs.keySet()) {
+                    ArrayList<Integer> docsList = docs.get(term);
+                    for (int i = 0; i < docSize; i++) {
+                        int docid = r.getDocid(i);
+                        if (docsList.contains(docid)) {
+                            continue;
+                        } else {
+                            double docScore = r.getDocidScore(i);
+                            double mle = termMLE.get(term);
+                            double docLen = Idx.getFieldLength("body", docid);
+                            double ptd = (fbMu * mle) / (docLen + fbMu);
+                            double addScore = ptd * docScore * (Math.log(1.0 / mle));
+                            double score = scoreMap.get(term);
+                            score = score + addScore;
+                            scoreMap.put(term, score);
+                        }
+                    }
+                }
+                // sort the scoreMap by score in descending order
+                LinkedList<Entry<String, Double>> termsInOrder = sortByComparator(scoreMap);
+                System.out.println(scoreMap);
+                System.out.println(termsInOrder);
+                StringBuilder expandedQuery = new StringBuilder();
+                StringBuilder finalQuery = new StringBuilder();
+                expandedQuery.append(String.format("%s: #wand (", qid));
+                finalQuery.append(String.format("%s: #wand %.2f %"));
+                for (int i = 0; i < fbTerms; i++) {
+                    Entry<String, Double> firstTerm = termsInOrder.pollFirst();
+                    double score = firstTerm.getValue();
+                    String term = firstTerm.getKey();
+                    expandedQuery.append(String.format(" %.4f %s", score, term));
+                }
+                expandedQuery.append(")");
+                output.println(expandedQuery);
+                output2.println();
+            }
+        } catch (IOException ex) {
+            System.err.println("Caught IOException: " + ex.getMessage());
+        } finally {
+            output.close();
+            output2.close();
+        }
+    }
+
+    /**
+     * helper function, to sort the hashmap scoreMap by the score.
+     * the way to sort hashmap by value comes from:
+     * https://stackoverflow.com/questions/8119366/sorting-hashmap-by-values
+     *
+     * @param unsortMap
+     * @return
+     */
+    private static LinkedList<Entry<String, Double>> sortByComparator(Map<String, Double> unsortMap) {
+        LinkedList<Entry<String, Double>> list = new LinkedList<>(unsortMap.entrySet());
+        // Sorting the list based on values in descending order
+        Collections.sort(list, new Comparator<Entry<String, Double>>() {
+            public int compare(Entry<String, Double> o1, Entry<String, Double> o2) {
+                return o1.getValue().compareTo(o2.getValue());
+            }
+        });
+        // Maintaining insertion order with the help of LinkedList
+        return list;
+    }
+
+    /**
+     * Go through the ranking file, sort and store pairs of docid and score by qid to a Hashmap
+     *
+     * @param initialRankingFile a file containing ranked docs of a qid
+     * @return a Hashmap whose key is qid, value is a ScoreList containing pairs of docid and score
+     * @throws IOException
+     */
+    private static HashMap<String, ScoreList> getRankingFile(String initialRankingFile) throws IOException {
+        BufferedReader input = null;
+        HashMap<String, ScoreList> ranking = new HashMap<>();
+        try {
+            String qLine = null;
+            input = new BufferedReader(new FileReader(initialRankingFile));
+            String curr_qid = null;
+            ScoreList r = new ScoreList();
+            while ((qLine = input.readLine()) != null) {
+                System.out.println(qLine);
+                String[] line = qLine.split("[\\s\t]");
+                String qid = line[0];
+                System.out.println(line.length);
+                for(int i = 0; i < line.length; i++) {
+                    System.out.println(line[i]);
+                }
+                int docid = Idx.getInternalDocid(line[2]);
+                double score = Double.parseDouble(line[4]);
+                System.out.println(docid + ", " + score);
+                if (curr_qid == null) {
+                    System.out.println("curr qid = null");
+                    r.add(docid, score);
+                    curr_qid = qid;
+                } else if (qid.equals(curr_qid)) {
+                    System.out.println("same qid");
+                    r.add(docid, score);
+                } else {
+                    System.out.println("next qid");
+                    r.sort();
+                    ranking.put(curr_qid, r);
+                    r = new ScoreList();
+                    curr_qid = qid;
+                }
+            }
+            r.sort();
+            ranking.put(curr_qid, r);
+        } catch (Exception e) {
+            System.out.println("catch Exception");
+            e.printStackTrace();
+        } finally {
+            input.close();
+            System.out.println(ranking);
+            return ranking;
+
+        }
     }
 
     /**
@@ -77,6 +274,7 @@ public class QryEval {
      * @return The initialized retrieval model
      * @throws IOException Error accessing the Lucene index.
      */
+
     private static RetrievalModel initializeRetrievalModel(Map<String, String> parameters)
             throws IOException {
 
@@ -175,40 +373,31 @@ public class QryEval {
 
         try {
             String qLine = null;
-
             input = new BufferedReader(new FileReader(queryFilePath));
             PrintWriter output = null;
             try {
                 output = new PrintWriter(new FileWriter(trecEvalOutputPath));
-
                 //  Each pass of the loop processes one query.
-
                 while ((qLine = input.readLine()) != null) {
                     int d = qLine.indexOf(':');
-
                     if (d < 0) {
                         throw new IllegalArgumentException
                                 ("Syntax error:  Missing ':' in query line.");
                     }
 
                     printMemoryUsage(false);
-
                     String qid = qLine.substring(0, d);
                     String query = qLine.substring(d + 1);
-
                     System.out.println("Query " + qLine);
-
                     ScoreList r = null;
-
                     r = processQuery(query, model);
-
                     if (r != null) {
                         printResults(qid, r, output, outputLength);
                         System.out.println();
                     }
                 }
             } catch (IOException ex) {
-                System.err.println("Caught IOException: " +  ex.getMessage());
+                System.err.println("Caught IOException: " + ex.getMessage());
             } finally {
                 output.close();
             }
@@ -235,10 +424,10 @@ public class QryEval {
             throws IOException {
         result.sort();
         if (result.size() < 1) {
-            output.println(String.format("%s\tQ0\tdummy\t1\t0\trun-1\n", queryName));
+            output.println(String.format("%s\tQ0\tdummy\t1\t0\trun-1", queryName));
         } else {
             for (int i = 0; i < Math.min(outputLength, result.size()); i++) {
-                output.println(String.format("%s\tQ0\t%s\t%d\t%.18f\trun-1\n", queryName,
+                output.println(String.format("%s\tQ0\t%s\t%d\t%.18f\trun-1", queryName,
                         Idx.getExternalDocid(result.getDocid(i)), i + 1, result.getDocidScore(i)));
             }
         }
@@ -283,7 +472,7 @@ public class QryEval {
             throw new IllegalArgumentException
                     ("Required parameters were missing from the parameter file.");
         }
-
+        System.out.print(parameters);
         return parameters;
     }
 
