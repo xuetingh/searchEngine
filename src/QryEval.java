@@ -25,7 +25,13 @@ public class QryEval {
 
     private static final String[] TEXT_FIELDS =
             {"body", "title", "url", "inlink"};
-
+    // all parameters read from parameter file
+    private static Map<String, String> parameters = new HashMap<>();
+    // for pfb, save documents in form of (qid, ScoreList)
+    private static Map<String, ScoreList> ranking;
+    private static boolean fb = false;
+    private static boolean hasRanking = false;
+    private static PrintWriter expandedQryFile = null;
 
     //  --------------- Methods ---------------------------------------
 
@@ -50,177 +56,120 @@ public class QryEval {
         if (args.length < 1) {
             throw new IllegalArgumentException(USAGE);
         }
-
-        Map<String, String> parameters = readParameterFile(args[0]);
-
+        parameters = readParameterFile(args[0]);
         //  Open the index and initialize the retrieval model.
 
         Idx.open(parameters.get("indexPath"));
         RetrievalModel model = initializeRetrievalModel(parameters);
 
         //  Perform experiments.
-        int outputLength = Integer.parseInt(parameters.get("trecEvalOutputLength"));
-        String queryFilePath = parameters.get("queryFilePath");
-        String trecEvalOutputPath = parameters.get("trecEvalOutputPath");
-        if (!parameters.keySet().contains("fb") || !Boolean.parseBoolean(parameters.get("fb"))) {
-            processQueryFile(queryFilePath, model, trecEvalOutputPath, outputLength);
-        } else {
-            int fbDocs = Integer.parseInt(parameters.get("fbDocs"));
-            int fbTerms = Integer.parseInt(parameters.get("fbTerms"));
-            int fbMu = Integer.parseInt(parameters.get("fbMu"));
-            double fbOrigWeight = Double.parseDouble(parameters.get("fbOrigWeight"));
-            String initialRankingFile = parameters.get("fbInitialRankingFile");
-            String fbExpansionQueryFile = parameters.get("fbExpansionQueryFile");
-            Map<String, ScoreList> ranking;
-            if (parameters.keySet().contains("fbInitialRankingFile")) {
-                ranking = getRankingFile(initialRankingFile);
-            } else {
-                //if ranking file is not specified, generate one by the original query
-                processQueryFile(queryFilePath, model, "fbRankingFile", fbDocs);
-                ranking = getRankingFile("fbRankingFile");
-            }
-            //get expanded query string, write it to
-            HashMap<String, String> origQry = getOriginalQuery(queryFilePath);
-            queryExpansion(ranking, fbDocs, fbTerms, fbExpansionQueryFile, fbMu, fbOrigWeight, origQry);
-            processQueryFile("fbFinalQueryFile", model, trecEvalOutputPath, outputLength);
-        }
+        processQueryFile(model);
         //  Clean up.
+
         timer.stop();
         System.out.println("Time:  " + timer);
     }
 
     /**
-     * helper function-- get a hashmap of qid and original query string
      *
-     * @param queryFilePath
+     * @param r
      * @return
      */
-    private static HashMap<String, String> getOriginalQuery(String queryFilePath) throws IOException{
-        HashMap<String, String> map = new HashMap<>();
-        BufferedReader input = null;
+    private static String queryExpansion(ScoreList r) {
+        StringBuilder expandedQuery = null;
+        // get parameters needed
+        int fbDocs = Integer.parseInt(parameters.get("fbDocs"));
+        int fbTerms = Integer.parseInt(parameters.get("fbTerms"));
+        int fbMu = Integer.parseInt(parameters.get("fbMu"));
         try {
-            String qLine = null;
-            input = new BufferedReader(new FileReader(queryFilePath));
-
-            while ((qLine = input.readLine()) != null) {
-                int d = qLine.indexOf(':');
-                if (d < 0) {
-                    throw new IllegalArgumentException
-                            ("Syntax error:  Missing ':' in query line.");
-                }
-                String qid = qLine.substring(0, d);
-                String query = qLine.substring(d + 1);
-                map.put(qid, query);
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            input.close();
-            return map;
-        }
-    }
-
-    private static void queryExpansion(Map<String, ScoreList> ranking, int fbDocs, int fbTerms, String filename,
-                                       int fbMu, double fbOrigWeight, HashMap<String, String> origQry) {
-        PrintWriter output = null;
-        PrintWriter outputFinal = null;
-        try {
-            output = new PrintWriter(new FileWriter(filename));
-            outputFinal = new PrintWriter(new FileWriter("fbFinalQueryFile"));
             double length = Idx.getSumOfFieldLengths("body");
-            for (String qid : ranking.keySet()) {
-                // for each query(qid), a new map of term and p_mle(t|C) is created, avoid repeated calculation
-                HashMap<String, Double> termMLE = new HashMap<>();
-                // for each term, stores its sum of scores from top fbDocs documents
-                HashMap<String, Double> scoreMap = new HashMap<>();
-                // for each term, keep track of what documents it appeared in, so we can calculate default score later
-                HashMap<String, ArrayList<Integer>> docs = new HashMap<>();
-                ScoreList r = ranking.get(qid);
-                int docSize = Math.min(fbDocs, r.size());
-                // go through the top fbDocs documents
+            // for each query(qid), a new map of term and p_mle(t|C) is created, avoid repeated calculation
+            HashMap<String, Double> termMLE = new HashMap<>();
+            // for each term, stores its sum of scores from top fbDocs documents
+            HashMap<String, Double> scoreMap = new HashMap<>();
+            // for each term, keep track of what documents it appeared in, so we can calculate default score later
+            HashMap<String, ArrayList<Integer>> docs = new HashMap<>();
+            int docSize = Math.min(fbDocs, r.size());
+            // go through the top fbDocs documents
+            for (int i = 0; i < docSize; i++) {
+                int docid = r.getDocid(i);
+                double docLen = Idx.getFieldLength("body", docid);
+                double docScore = r.getDocidScore(i);
+                TermVector tv = new TermVector(docid, "body");
+                // go through the forward index
+                for (int j = 1; j < tv.stemsLength(); j++) {
+                    String term = tv.stemString(j);
+                    // ignore words with "." or ","
+                    if (term.contains(".") || term.contains(",")) {
+                        continue;
+                    }
+                    // save which documents contains a certain term, so we know which documents don't
+                    if (docs.containsKey(term)) {
+                        ArrayList<Integer> docList = docs.get(term);
+                        docList.add(docid);
+                        docs.put(term, docList);
+                    } else {
+                        ArrayList<Integer> docList = new ArrayList<>();
+                        docList.add(docid);
+                        docs.put(term, docList);
+                    }
+                    double mle;
+                    if (!termMLE.containsKey(term)) {
+                        double ctf = tv.totalStemFreq(j);
+                        mle = ctf / length;
+                        termMLE.put(term, mle);
+                    } else {
+                        mle = termMLE.get(term);
+                    }
+                    double tf = tv.stemFreq(j);
+                    double ptd = (tf + fbMu * mle) / (docLen + fbMu);
+                    double score_d = ptd * docScore * (Math.log(1.0 / mle));
+                    if (scoreMap.containsKey(term)) {
+                        double score = scoreMap.get(term);
+                        score = score + score_d;
+                        scoreMap.put(term, score);
+                    } else {
+                        scoreMap.put(term, score_d);
+                    }
+                }
+            }
+            // now, go through the term in scoreMap, add default scores of those documents where tf=0
+            for (String term : docs.keySet()) {
+                ArrayList<Integer> docsList = docs.get(term);
                 for (int i = 0; i < docSize; i++) {
                     int docid = r.getDocid(i);
-                    double docLen = Idx.getFieldLength("body", docid);
-                    double docScore = r.getDocidScore(i);
-                    TermVector tv = new TermVector(docid, "body");
-                    // go through the forward index
-                    for (int j = 1; j < tv.stemsLength(); j++) {
-                        String term = tv.stemString(j);
-                        // ignore words with "." or ","
-                        if (term.contains(".") || term.contains(",")) {
-                            continue;
-                        }
-                        // save which documents contains a certain term, so we know which documents don't
-                        if (docs.containsKey(term)) {
-                            ArrayList<Integer> docList = docs.get(term);
-                            docList.add(docid);
-                            docs.put(term, docList);
-                        } else {
-                            ArrayList<Integer> docList = new ArrayList<>();
-                            docList.add(docid);
-                            docs.put(term, docList);
-                        }
-                        double mle;
-                        if (!termMLE.containsKey(term)) {
-                            double ctf = tv.totalStemFreq(j);
-                            mle = ctf / length;
-                            termMLE.put(term, mle);
-                        } else {
-                            mle = termMLE.get(term);
-                        }
-                        double tf = tv.stemFreq(j);
-                        double ptd = (tf + fbMu * mle) / (docLen + fbMu);
+                    if (docsList.contains(docid)) {
+                        continue;
+                    } else {
+                        double docScore = r.getDocidScore(i);
+                        double mle = termMLE.get(term);
+                        double docLen = Idx.getFieldLength("body", docid);
+                        double ptd = (fbMu * mle) / (docLen + fbMu);
                         double score_d = ptd * docScore * (Math.log(1.0 / mle));
-                        if (scoreMap.containsKey(term)) {
-                            double score = scoreMap.get(term);
-                            score = score + score_d;
-                            scoreMap.put(term, score);
-                        } else {
-                            scoreMap.put(term, score_d);
-                        }
+                        double score = scoreMap.get(term);
+                        score = score + score_d;
+                        scoreMap.put(term, score);
                     }
                 }
-                // now, go through the term in scoreMap, add default scores of those documents where tf=0
-                for (String term : docs.keySet()) {
-                    ArrayList<Integer> docsList = docs.get(term);
-                    for (int i = 0; i < docSize; i++) {
-                        int docid = r.getDocid(i);
-                        if (docsList.contains(docid)) {
-                            continue;
-                        } else {
-                            double docScore = r.getDocidScore(i);
-                            double mle = termMLE.get(term);
-                            double docLen = Idx.getFieldLength("body", docid);
-                            double ptd = (fbMu * mle) / (docLen + fbMu);
-                            double addScore = ptd * docScore * (Math.log(1.0 / mle));
-                            double score = scoreMap.get(term);
-                            score = score + addScore;
-                            scoreMap.put(term, score);
-                        }
-                    }
-                }
-                // sort the scoreMap by score in descending order
-                LinkedList<Entry<String, Double>> termsInOrder = sortByComparator(scoreMap);
-                System.out.println(scoreMap);
-                System.out.println(termsInOrder);
-                StringBuilder expandedQuery = new StringBuilder();
-
-                expandedQuery.append("#wand (");
-                for (int i = 0; i < fbTerms; i++) {
-                    Entry<String, Double> firstTerm = termsInOrder.pollFirst();
-                    double score = firstTerm.getValue();
-                    String term = firstTerm.getKey();
-                    expandedQuery.append(String.format(" %.4f %s", score, term));
-                }
-                expandedQuery.append(")");
-                output.println(qid + ": " + expandedQuery);
-                outputFinal.println(String.format("%s: #wand( %.2f %s %.2f %s)", qid, fbOrigWeight, origQry.get(qid), 1 - fbOrigWeight, expandedQuery));
             }
+            // sort the scoreMap by score in descending order
+            LinkedList<Entry<String, Double>> termsInOrder = sortByComparator(scoreMap);
+            expandedQuery = new StringBuilder();
+
+            expandedQuery.append("#wand (");
+            int termSize = Math.min(fbTerms, termsInOrder.size());
+            for (int i = 0; i < termSize; i++) {
+                Entry<String, Double> firstTerm = termsInOrder.pollFirst();
+                double score = firstTerm.getValue();
+                String term = firstTerm.getKey();
+                expandedQuery.append(String.format(" %.4f %s", score, term));
+            }
+            expandedQuery.append(")");
         } catch (IOException ex) {
             System.err.println("Caught IOException: " + ex.getMessage());
         } finally {
-            output.close();
-            outputFinal.close();
+            System.out.println(expandedQuery.toString());
+            return expandedQuery.toString();
         }
     }
 
@@ -237,7 +186,7 @@ public class QryEval {
         // Sorting the list based on values in descending order
         Collections.sort(list, new Comparator<Entry<String, Double>>() {
             public int compare(Entry<String, Double> o1, Entry<String, Double> o2) {
-                return o1.getValue().compareTo(o2.getValue());
+                return o2.getValue().compareTo(o1.getValue());
             }
         });
         // Maintaining insertion order with the help of LinkedList
@@ -260,16 +209,11 @@ public class QryEval {
             String curr_qid = null;
             ScoreList r = new ScoreList();
             while ((qLine = input.readLine()) != null) {
-                System.out.println(qLine);
                 String[] line = qLine.split("[\\s\t]");
                 String qid = line[0];
-                System.out.println(line.length);
-                for (int i = 0; i < line.length; i++) {
-                    System.out.println(line[i]);
-                }
                 int docid = Idx.getInternalDocid(line[2]);
                 double score = Double.parseDouble(line[4]);
-                System.out.println(docid + ", " + score);
+//                System.out.println(docid + ", " + score);
                 if (curr_qid == null) {
                     System.out.println("curr qid = null");
                     r.add(docid, score);
@@ -288,7 +232,6 @@ public class QryEval {
             r.sort();
             ranking.put(curr_qid, r);
         } catch (Exception e) {
-            System.out.println("catch Exception");
             e.printStackTrace();
         } finally {
             input.close();
@@ -358,17 +301,46 @@ public class QryEval {
      * @return Search results
      * @throws IOException Error accessing the index
      */
-    static ScoreList processQuery(String qString, RetrievalModel model)
+    static ScoreList processQuery(String qString, RetrievalModel model, String qid)
             throws IOException {
 
         String defaultOp = model.defaultQrySopName();
         qString = defaultOp + "(" + qString + ")";
         Qry q = QryParser.getQuery(qString);
 
-        // Show the query that is evaluated
+        ScoreList r;
+        // do not need feedback
+        if (!fb) {
+            System.out.println("    ---->" + qString);
+            r = processQry(q, model);
+        } else {
+            double fbOrigWeight = Double.parseDouble(parameters.get("fbOrigWeight"));
+            // need feedback, so we need to expand query based on initial ranking
+            // if ranking file is specified
+            if (hasRanking) r = ranking.get(qid);
+                // if ranking file is not specified, do a retrieval to get a ranking
+            else r = processQry(q, model);
+            String expandedQuery = queryExpansion(r);
+            if (expandedQryFile != null) expandedQryFile.println(qid + ": " + expandedQuery);
+            else System.out.println("Expanded Query: " + expandedQuery);
+            String newQuery = String.format("#wand ( %.2f %s %.2f %s)",
+                    fbOrigWeight, qString, 1 - fbOrigWeight, expandedQuery);
+            System.out.println("    ---->" + newQuery);
+            Qry qNew = QryParser.getQuery(newQuery);
+            r = processQry(qNew, model);
+        }
+        return r;
+    }
 
-        System.out.println("    --> " + q);
-
+    /**
+     * helper function, process a query and returns ScoreList
+     *
+     * @param q     a query operator with terms
+     * @param model
+     * @return
+     * @throws IOException
+     */
+    static ScoreList processQry(Qry q, RetrievalModel model) throws IOException {
         if (q != null) {
 
             ScoreList r = new ScoreList();
@@ -384,21 +356,31 @@ public class QryEval {
                     q.docIteratorAdvancePast(docid);
                 }
             }
-
+            r.sort();
             return r;
         } else
             return null;
     }
 
-    /**
-     * Process the query file.
-     *
-     * @param queryFilePath
-     * @param model
-     * @throws IOException Error accessing the Lucene index.
-     */
-    static void processQueryFile(String queryFilePath, RetrievalModel model, String trecEvalOutputPath, int outputLength)
+    static void processQueryFile(RetrievalModel model)
             throws IOException {
+        // get parameters need
+        int outputLength = Integer.parseInt(parameters.get("trecEvalOutputLength"));
+        String queryFilePath = parameters.get("queryFilePath");
+        String trecEvalOutputPath = parameters.get("trecEvalOutputPath");
+        String initialRankingFile = parameters.get("fbInitialRankingFile");
+
+        if (parameters.keySet().contains("fb") && Boolean.parseBoolean(parameters.get("fb"))) {
+            fb = true;
+            if (parameters.keySet().contains("fbInitialRankingFile")) {
+                hasRanking = true;
+                ranking = getRankingFile(initialRankingFile);
+            }
+        }
+        if(fb && parameters.containsKey("fbExpansionQueryFile")){
+            String fbExpansionQueryFile = parameters.get("fbExpansionQueryFile");
+            expandedQryFile = new PrintWriter(new FileWriter(fbExpansionQueryFile));
+        }
 
         BufferedReader input = null;
 
@@ -406,6 +388,7 @@ public class QryEval {
             String qLine = null;
             input = new BufferedReader(new FileReader(queryFilePath));
             PrintWriter output = null;
+
             try {
                 output = new PrintWriter(new FileWriter(trecEvalOutputPath));
                 //  Each pass of the loop processes one query.
@@ -422,7 +405,7 @@ public class QryEval {
                     System.out.println("Query " + qLine);
 
                     ScoreList r = null;
-                    r = processQuery(query, model);
+                    r = processQuery(query, model, qid);
                     if (r != null) {
                         printResults(qid, r, output, outputLength);
                         System.out.println();
@@ -437,6 +420,7 @@ public class QryEval {
             ex.printStackTrace();
         } finally {
             input.close();
+            if (expandedQryFile!= null) expandedQryFile.close();
         }
     }
 
@@ -454,7 +438,6 @@ public class QryEval {
      */
     static void printResults(String queryName, ScoreList result, PrintWriter output, int outputLength)
             throws IOException {
-        result.sort();
         if (result.size() < 1) {
             output.println(String.format("%s\tQ0\tdummy\t1\t0\trun-1", queryName));
         } else {
@@ -504,7 +487,6 @@ public class QryEval {
             throw new IllegalArgumentException
                     ("Required parameters were missing from the parameter file.");
         }
-        System.out.print(parameters);
         return parameters;
     }
 
