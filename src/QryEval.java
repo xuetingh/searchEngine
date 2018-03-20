@@ -80,21 +80,53 @@ public class QryEval {
                 ranking = getRankingFile("fbRankingFile");
             }
             //get expanded query string, write it to
-            queryExpansion(ranking, fbDocs, fbTerms, fbExpansionQueryFile, fbMu, fbOrigWeight);
+            HashMap<String, String> origQry = getOriginalQuery(queryFilePath);
+            queryExpansion(ranking, fbDocs, fbTerms, fbExpansionQueryFile, fbMu, fbOrigWeight, origQry);
             processQueryFile("fbFinalQueryFile", model, trecEvalOutputPath, outputLength);
         }
         //  Clean up.
-
         timer.stop();
         System.out.println("Time:  " + timer);
     }
 
-    private static void queryExpansion(Map<String, ScoreList> ranking, int fbDocs, int fbTerms, String filename, int fbMu, double fbOrigWeight) {
+    /**
+     * helper function-- get a hashmap of qid and original query string
+     *
+     * @param queryFilePath
+     * @return
+     */
+    private static HashMap<String, String> getOriginalQuery(String queryFilePath) throws IOException{
+        HashMap<String, String> map = new HashMap<>();
+        BufferedReader input = null;
+        try {
+            String qLine = null;
+            input = new BufferedReader(new FileReader(queryFilePath));
+
+            while ((qLine = input.readLine()) != null) {
+                int d = qLine.indexOf(':');
+                if (d < 0) {
+                    throw new IllegalArgumentException
+                            ("Syntax error:  Missing ':' in query line.");
+                }
+                String qid = qLine.substring(0, d);
+                String query = qLine.substring(d + 1);
+                map.put(qid, query);
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            input.close();
+            return map;
+        }
+    }
+
+    private static void queryExpansion(Map<String, ScoreList> ranking, int fbDocs, int fbTerms, String filename,
+                                       int fbMu, double fbOrigWeight, HashMap<String, String> origQry) {
         PrintWriter output = null;
-        PrintWriter output2 = null;
+        PrintWriter outputFinal = null;
         try {
             output = new PrintWriter(new FileWriter(filename));
-            output2 = new PrintWriter(new FileWriter("fbFinalQueryFile"));
+            outputFinal = new PrintWriter(new FileWriter("fbFinalQueryFile"));
             double length = Idx.getSumOfFieldLengths("body");
             for (String qid : ranking.keySet()) {
                 // for each query(qid), a new map of term and p_mle(t|C) is created, avoid repeated calculation
@@ -172,9 +204,8 @@ public class QryEval {
                 System.out.println(scoreMap);
                 System.out.println(termsInOrder);
                 StringBuilder expandedQuery = new StringBuilder();
-                StringBuilder finalQuery = new StringBuilder();
-                expandedQuery.append(String.format("%s: #wand (", qid));
-                finalQuery.append(String.format("%s: #wand %.2f %"));
+
+                expandedQuery.append("#wand (");
                 for (int i = 0; i < fbTerms; i++) {
                     Entry<String, Double> firstTerm = termsInOrder.pollFirst();
                     double score = firstTerm.getValue();
@@ -182,14 +213,14 @@ public class QryEval {
                     expandedQuery.append(String.format(" %.4f %s", score, term));
                 }
                 expandedQuery.append(")");
-                output.println(expandedQuery);
-                output2.println();
+                output.println(qid + ": " + expandedQuery);
+                outputFinal.println(String.format("%s: #wand( %.2f %s %.2f %s)", qid, fbOrigWeight, origQry.get(qid), 1 - fbOrigWeight, expandedQuery));
             }
         } catch (IOException ex) {
             System.err.println("Caught IOException: " + ex.getMessage());
         } finally {
             output.close();
-            output2.close();
+            outputFinal.close();
         }
     }
 
@@ -233,7 +264,7 @@ public class QryEval {
                 String[] line = qLine.split("[\\s\t]");
                 String qid = line[0];
                 System.out.println(line.length);
-                for(int i = 0; i < line.length; i++) {
+                for (int i = 0; i < line.length; i++) {
                     System.out.println(line[i]);
                 }
                 int docid = Idx.getInternalDocid(line[2]);
@@ -389,6 +420,7 @@ public class QryEval {
                     String qid = qLine.substring(0, d);
                     String query = qLine.substring(d + 1);
                     System.out.println("Query " + qLine);
+
                     ScoreList r = null;
                     r = processQuery(query, model);
                     if (r != null) {
