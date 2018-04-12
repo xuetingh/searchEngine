@@ -57,13 +57,17 @@ public class QryEval {
             throw new IllegalArgumentException(USAGE);
         }
         parameters = readParameterFile(args[0]);
-        //  Open the index and initialize the retrieval model.
-
         Idx.open(parameters.get("indexPath"));
-        RetrievalModel model = initializeRetrievalModel(parameters);
-
-        //  Perform experiments.
-        processQueryFile(model);
+        //  Open the index and initialize the retrieval model.
+//        System.out.println("retrieval algorithm" + parameters.get("retrievalAlgorithm").toLowerCase());
+        if (parameters.get("retrievalAlgorithm").toLowerCase().equals("letor")) {
+            new RetrievalAlgorithmLetor(parameters);
+        } else {
+            System.out.println("else");
+            RetrievalModel model = initializeRetrievalModel(parameters);
+            //  Perform experiments.
+            processQueryFile(model);
+        }
         //  Clean up.
 
         timer.stop();
@@ -169,8 +173,8 @@ public class QryEval {
             System.err.println("Caught IOException: " + ex.getMessage());
         } finally {
             System.out.println(expandedQuery.toString());
-            return expandedQuery.toString();
         }
+        return expandedQuery.toString();
     }
 
     /**
@@ -215,18 +219,16 @@ public class QryEval {
                 double score = Double.parseDouble(line[4]);
 //                System.out.println(docid + ", " + score);
                 if (curr_qid == null) {
-                    System.out.println("curr qid = null");
                     r.add(docid, score);
                     curr_qid = qid;
                 } else if (qid.equals(curr_qid)) {
-                    System.out.println("same qid");
                     r.add(docid, score);
                 } else {
-                    System.out.println("next qid");
                     r.sort();
                     ranking.put(curr_qid, r);
                     r = new ScoreList();
                     curr_qid = qid;
+                    r.add(docid, score);
                 }
             }
             r.sort();
@@ -236,9 +238,8 @@ public class QryEval {
         } finally {
             input.close();
             System.out.println(ranking);
-            return ranking;
-
         }
+        return ranking;
     }
 
     /**
@@ -263,10 +264,12 @@ public class QryEval {
             double k1 = Double.parseDouble(parameters.get("BM25:k_1"));
             double b = Double.parseDouble(parameters.get("BM25:b"));
             double k3 = Double.parseDouble(parameters.get("BM25:k_3"));
+            if (k1 < 0 || k3 < 0 || b < 0 || b > 1) throw new IllegalArgumentException("Illegal BM25 parameters");
             model = new RetrievalModelBM25(b, k1, k3);
         } else if (modelString.equals("indri")) {
             int mu = Integer.parseInt(parameters.get("Indri:mu"));
             double lambda = Double.parseDouble(parameters.get("Indri:lambda"));
+            if (mu < 0 || lambda < 0 || lambda > 1) throw new IllegalArgumentException("Illegal Indri parameters");
             model = new RetrievalModelIndri(mu, lambda);
         } else {
             throw new IllegalArgumentException
@@ -317,9 +320,13 @@ public class QryEval {
             double fbOrigWeight = Double.parseDouble(parameters.get("fbOrigWeight"));
             // need feedback, so we need to expand query based on initial ranking
             // if ranking file is specified
-            if (hasRanking) r = ranking.get(qid);
+            if (hasRanking) {
+                r = ranking.get(qid);
+                r.sort();
+            } else {
                 // if ranking file is not specified, do a retrieval to get a ranking
-            else r = processQry(q, model);
+                r = processQry(q, model);
+            }
             String expandedQuery = queryExpansion(r);
             if (expandedQryFile != null) expandedQryFile.println(qid + ": " + expandedQuery);
             else System.out.println("Expanded Query: " + expandedQuery);

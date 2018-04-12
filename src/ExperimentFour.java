@@ -6,8 +6,8 @@ public class ExperimentFour {
         try
         {
             String qLine = null;
-            input = new BufferedReader(new FileReader("query.txt"));
-            File f = new File("query_hw2_e4_"+ w +".txt");
+            input = new BufferedReader(new FileReader("trainingQuery.txt"));
+            File f = new File(w +".txt");
             FileOutputStream fStream = new FileOutputStream(f);
             OutputStreamWriter output = new OutputStreamWriter(fStream);
             //  Each pass of the loop processes one query.

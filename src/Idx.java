@@ -1,15 +1,14 @@
 /** 
  *  Copyright (c) 2017, Carnegie Mellon University.  All Rights Reserved.
  */
-import java.io.*;
-import java.nio.file.Paths;
-import java.util.*;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
 
 /**
  *  Idx manages and provides access to Lucene indexes and auxiliary

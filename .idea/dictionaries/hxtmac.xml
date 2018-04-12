@@ -3,6 +3,8 @@
     <words>
       <w>docid</w>
       <w>indri</w>
+      <w>inlink</w>
+      <w>letor</w>
     </words>
   </dictionary>
 </component>

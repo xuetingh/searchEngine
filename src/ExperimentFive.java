@@ -7,7 +7,7 @@ public class ExperimentFive {
         try {
             String qLine = null;
             input = new BufferedReader(new FileReader("query.txt"));
-            File f = new File("query_hw2_e5_" + w + ".txt");
+            File f = new File( w + ".txt");
             FileOutputStream fStream = new FileOutputStream(f);
             OutputStreamWriter output = new OutputStreamWriter(fStream);
             //  Each pass of the loop processes one query.
@@ -19,7 +19,7 @@ public class ExperimentFive {
                 }
                 String terms[] = qLine.split("(\\s+)|(:)");
                 output.write(terms[0] + ":#WAND(");
-                output.write(w1 + " #AND( ");
+                output.write(w1 + " #AND(");
                 for (int i = 1; i < terms.length; i++) {
                     output.write(" " + terms[i]);
                 }
@@ -41,11 +41,7 @@ public class ExperimentFive {
 
     public static void main(String[] args) {
         ExperimentFive ef = new ExperimentFive();
-        ef.makeQry(0.1, 0.8, 0.1, "181");
-        ef.makeQry(0.1, 0.1, 0.8, "118");
-        ef.makeQry(0.2, 0.4, 0.4, "244");
-        ef.makeQry(0.4, 0.2, 0.4, "424");
-        ef.makeQry(0.4, 0.4, 0.2, "442");
+        ef.makeQry(0.5, 0.25, 0.25, "hw4-baseline-indri-sdm");
 
     }
 

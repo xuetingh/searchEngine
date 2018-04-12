@@ -1,0 +1,8 @@
+indexPath=index-cw09
+queryFilePath=query.txt
+trecEvalOutputPath=../ex4/HW4-baseline-bm25.teIn
+trecEvalOutputLength=100
+retrievalAlgorithm=BM25
+BM25:k_1=1.2
+BM25:b=0.75
+BM25:k_3=0
